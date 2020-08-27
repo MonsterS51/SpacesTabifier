@@ -90,6 +90,7 @@ namespace SpacesTabifier {
 		private void Execute(object sender, EventArgs e) {
 			ThreadHelper.ThrowIfNotOnUIThread();
 
+			// пытаемся получить IWpfTextView текущего окна
 			var componentModel = (IComponentModel)Package.GetGlobalService(typeof(SComponentModel));
 			var textManager = (IVsTextManager)Package.GetGlobalService(typeof(SVsTextManager));
 			IVsTextView activeView = null;
@@ -104,10 +105,10 @@ namespace SpacesTabifier {
 					OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
 				return;
 			}
-
 			var editorAdapter = componentModel.GetService<IVsEditorAdaptersFactoryService>();
 			var textView = editorAdapter.GetWpfTextView(activeView);
 
+			// дергаем размер табов из настроек
 			int tabSize = textView.Options.GetOptionValue(DefaultOptions.TabSizeOptionId);
 
 			var snapshot = textView.TextSnapshot;
@@ -137,6 +138,7 @@ namespace SpacesTabifier {
 			return Enumerable.Range(start, end).Select(x => snapshot.GetLineFromLineNumber(x));
 		}
 
+		///<summary> Получаем строку с замененными пробелами. </summary>
 		private string Replacer(string srcStr, int tabSize) {
 			if (String.IsNullOrEmpty(srcStr)) return srcStr;
 			string result = srcStr;
@@ -163,10 +165,8 @@ namespace SpacesTabifier {
 			}
 
 			// пробелы перед комментарием
-			Console.WriteLine("Check: " + result);
 			int spcCount2 = 0;
 			int commStart = result.IndexOf("//");
-			Console.WriteLine("commStart: " + commStart);
 
 			if (commStart > 0) {	// если перед комментарием пробел
 				for (int i = commStart-1; i >= 0; i--) {
@@ -174,7 +174,6 @@ namespace SpacesTabifier {
 					if (result[i] == ' ') spcCount2++;
 				}
 			}
-			Console.WriteLine(spcCount2);
 
 			if (spcCount2 > 0) {
 				int tabsCount = CalcTabs(spcCount2, tabSize);
@@ -184,15 +183,12 @@ namespace SpacesTabifier {
 				for (int i = 0; i < tabsCount; i++) {
 					result = result.Insert(startInd, "\t");
 				}
-
 			}
-			Console.WriteLine("Fixed: " + result);
-
 
 			return result;
 		}
 
-
+		///<summary> Считает число табов. </summary>
 		private int CalcTabs(int spcCount, int tabSize) {
 			int num = spcCount / tabSize;
 			int lastSpc = spcCount % tabSize;
